@@ -1,0 +1,14 @@
+#!/bin/bash
+function syncfile(){
+    for host in $@;do
+        rsync -aSH --delete /usr/local/hadoop/etc ${host}:/usr/local/hadoop/ -e 'ssh' &
+        rsync /etc/hosts ${host}:/etc/hosts
+    done
+    wait
+}
+
+if (( $# > 0 ));then
+   syncfile $@
+else
+   echo "${0} host1 host2 host3 ... ... host(N)"
+fi
