@@ -1,0 +1,142 @@
+/var/log/cron：记录crond计划任务产生的事件信息。
+
+/var/log/dmesg：记录Linux系统在引导过程中的各种事件信息。
+
+/var/log/maillog：记录进入或发出系统的电子邮件活动。
+
+/var/log/lastlog：最近几次成功登录事件和最后一次不成功登录事件。
+
+/var/log/rpmpkgs：记录系统中安装的各rpm包列表信息。
+
+/var/log/secure：记录用户登录认证过程中的事件信息。
+
+/var/log/wtmp：记录每个用户登录、注销及系统启动和停机事件。
+
+/var/run/utmp：记录当前登录的每个用户的详细信息。
+0 EMERG(紧急)：会导致主机系统不可用的情况。
+
+1 ALERT(警告)：必须马上采取措施解决的问题。
+
+2 CRIT(严重)：比较严重的情况。
+
+3 ERR(错误)：运行出现错误。
+
+4 WARNING(提醒)：可能影响系统功能，需要提醒用户的重要事件。
+
+5 NOTICE(注意)：不会影响正常功能，但是需要注意的事件。
+
+6 INFO(信息)：一般信息。
+
+
+
+
+
+
+
+
+
+
+
+
+***********************************************************************************************
+selinux:安全增强的linux ，主要用于服务的安全。
+ 一，工作模式
+1，Enforcing  如果发生selinux违规，拒绝
+2， Permissive  如果发生selinux违规，放行，但记录
+3，Disabled  禁用
+
+setenforce 1|0   /etc/selinux/config
+
+ 二，配置
+1，安全上下文
+sealert -b 图形界面
+restorecon 
+2，布尔值
+功能开关 getsebool | setsebool -P
+3，服务器端口
+semanage port -l | grep http
+semanage port -a -t http_port_t -p tcp 8909
+
+********************************************
+防火墙：
+firewall-cmd --get-default-zone
+trusted:进入该区域数据包，放行
+block：进入该区域的数据包，拒绝
+drop：进入该区域的数据包，丢弃
+其他区域除明确允许的以外，默认拒绝。
+firewall-cmd --get-zones
+(1)匹配数据包的源ip地址
+firewall-cmd --add-source=192.168.1.0/24 --zone=dmz
+(2）匹配数据包的入站网卡
+firewall-cmd --add--interface=网卡 --zone=work
+(3)默认区域
+firewall-cmd --get-default-zone
+firewall-cmd --set-default-zone=XX
+(4)允许访问http服务
+firewall-cmd --add-service=http --zone=home
+firewall-cmd --add-port=8909/tcp --zone=home
+**************************************************
+iptables:
+四表五列：
+raw(状态跟踪), fliter（防火墙）,net（网络地址转换） ,mangle (流量标记)
+input（数据包目的地是自己），
+output（自己向外发，源是自己）
+forward（一块网卡进，另一块出）
+postrouting（路由前，DNAT）
+prerouting（路由后，SNAT）
+iptables -A|I INPUT -p tcp --dport 22
+iptables -P  INPUT DROP (默认规划)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+firewall-cmd --get-active-zones 
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
