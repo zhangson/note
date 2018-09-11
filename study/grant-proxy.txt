@@ -1,0 +1,114 @@
+用户组管理:用来批量管理用户，同一个角色下的用户，拥有相同的权限。
+
+mysql> show variables like "%proxy%"; #查看当前proxy是否开启
+mysql> show variables like "%proxy%";
++-----------------------------------+-------+
+| Variable_name                     | Value |
++-----------------------------------+-------+
+| check_proxy_users                 | OFF   |
+| mysql_native_password_proxy_users | OFF   |
+| proxy_user                        |       |
+| sha256_password_proxy_users       | OFF   |
++-----------------------------------+-------+
+4 rows in set (0.00 sec)
+
+#开启proxy 
+mysql> set global check_proxy_users =on; 
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> set global mysql_native_password_proxy_users = on;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> show variables like "%proxy%";
++-----------------------------------+-------+
+| Variable_name                     | Value |
++-----------------------------------+-------+
+| check_proxy_users                 | ON    |
+| mysql_native_password_proxy_users | ON    |
+| proxy_user                        |       |
+| sha256_password_proxy_users       | OFF   |
++-----------------------------------+-------+
+4 rows in set (0.00 sec)
+
+写进配置文件 使其永久生效
+
+]# vim /etc/my.cnf
+[mysqld]
+check_proxy_users=on
+mysql_native_password_proxy_users=on
+:wq
+]# systemctl  restart mysqld
+
+#创建用户
+mysql> create user mysqladmin identified by "123qqq...A";
+
+#给mysqladmin用户授权
+mysql> grant all on gamedb.* to mysqladmin@"%";
+
+#将mysqladmin用户的权限映射给will和tom
+mysql> create user will identified by "123qqq...A";
+mysql> create user tom identified by "123qqq...A";
+mysql> grant proxy on mysqladmin to will;
+mysql> grant proxy on mysqladmin to tom;
+
+#查看用户的权限
+mysql> show grants for mysqladmin;
++--------------------------------------------------------+
+| Grants for mysqladmin@%                                |
++--------------------------------------------------------+
+| GRANT USAGE ON *.* TO 'mysqladmin'@'%'                 |
+| GRANT ALL PRIVILEGES ON `gamedb`.* TO 'mysqladmin'@'%' |
++--------------------------------------------------------+
+2 rows in set (0.00 sec)
+
+mysql> show grants for will;
++-----------------------------------------------+
+| Grants for will@%                             |
++-----------------------------------------------+
+| GRANT USAGE ON *.* TO 'will'@'%'              |
+| GRANT PROXY ON 'mysqladmin'@'%' TO 'will'@'%' |
++-----------------------------------------------+
+2 rows in set (0.00 sec)
+
+mysql> show grants for tom;
++----------------------------------------------+
+| Grants for tom@%                             |
++----------------------------------------------+
+| GRANT USAGE ON *.* TO 'tom'@'%'              |
+| GRANT PROXY ON 'mysqladmin'@'%' TO 'tom'@'%' |
++----------------------------------------------+
+2 rows in set (0.00 sec)
+
+#查看授权记录
+mysql> select * from mysql.proxies_priv;
++-----------+------+--------------+--------------+------------+----------------------+---------------------+
+| Host      | User | Proxied_host | Proxied_user | With_grant | Grantor              | Timestamp           |
++-----------+------+--------------+--------------+------------+----------------------+---------------------+
+| localhost | root |              |              |          1 | boot@connecting host | 0000-00-00 00:00:00 |
+| %         | will | %            | mysqladmin   |          0 | root@localhost       | 0000-00-00 00:00:00 |
+| %         | tom  | %            | mysqladmin   |          0 | root@localhost       | 0000-00-00 00:00:00 |
++-----------+------+--------------+--------------+------------+----------------------+---------------------+
+
+#验证：在客户端使用will和tom 用户连接数据库服务器
+
+ot@host50 ~]# mysql -h192.168.4.55 -utom  -p123qqq...A
+mysql> show grants;
++--------------------------------------------------------+
+| Grants for mysqladmin@%                                |
++--------------------------------------------------------+
+| GRANT USAGE ON *.* TO 'mysqladmin'@'%'                 |
+| GRANT ALL PRIVILEGES ON `gamedb`.* TO 'mysqladmin'@'%' |
++--------------------------------------------------------+
+
+
+#删除root用户本机登录的后的proxy权限。
+mysql> revoke proxy on ''@'' from 'root'@'localhost';
+
+#无法再做用户映射
+mysql> create user bob identified by "123qqq...A";
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> grant proxy on mysqladmin to bob;
+ERROR 1698 (28000): Access denied for user 'root'@'localhost'
+mysql> 
+
